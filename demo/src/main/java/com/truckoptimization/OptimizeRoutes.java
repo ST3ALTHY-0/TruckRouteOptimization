@@ -24,9 +24,9 @@ public class OptimizeRoutes {
     private static final int MAX_NUMBER_TRUCKS = 20;
     private static final int VEHICLE_CAPACITY = 10;
     private static final int SECONDS_TO_CALCULATE = 5;
-    private static final int COST_OF_ADDING_VEHICLE = 10000;
+    private static final int COST_OF_ADDING_VEHICLE = 10000; //discourages model from adding vehicles
     private static final long PENALTY_OF_MISSING_LOCATION = 100_000_000;
-    private static final long PENALTY_PER_METER_OVER = 10000; //discoreges model from longer routes
+    private static final long PENALTY_PER_METER_OVER = 10000; //discourages model from longer routes
 
     public Assignment OptimizeRoutesFrom2DCords(long[][] distanceMatrixCords, int numLocations, int[] demands) {
 
@@ -79,8 +79,6 @@ public class OptimizeRoutes {
                     "Distance");
 
             RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
-            // add penalty for more distance traveled
-            //distanceDimension.setSpanCostCoefficientForAllVehicles(PENALTY_FOR_INCREASED_DISTANCE);
 
             // add penalty for missing location | to enforce going to every location, no mater what, comment out code, may result in no solution
             // for (int i = 1; i < numLocations; i++) {

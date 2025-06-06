@@ -19,14 +19,17 @@ import com.google.ortools.constraintsolver.main;
 
 public class OptimizeRoutes {
 
-    private static final int MAX_DISTANCE_METERS = 1000000; //for now needs to be at least 900000 so that we can get to ohio and back
+    private static final int MAX_DISTANCE_METERS = 1000000; // for now needs to be at least 900000 so that we can get to
+                                                            // ohio and back
+    private static final int OPTIMAL_DISTANCE_METERS = 600000;
     private static final int MAX_DISTANCE_METERS_TEST = 2000000; // ~1243 miles
     private static final int MAX_NUMBER_TRUCKS = 20;
     private static final int VEHICLE_CAPACITY = 10;
-    private static final int SECONDS_TO_CALCULATE = 10; //how long the model will spend trying to find the optimal solution
-    private static final int COST_OF_ADDING_VEHICLE = 10000; //discourages model from adding vehicles
+    private static final int SECONDS_TO_CALCULATE = 10; // how long the model will spend trying to find the optimal
+                                                        // solution
+    private static final int COST_OF_ADDING_VEHICLE = 1000; // discourages model from adding vehicles
     private static final long PENALTY_OF_MISSING_LOCATION = 100_000_000;
-    private static final long PENALTY_PER_METER_OVER = 1000; //discourages model from longer routes
+    private static final long PENALTY_PER_METER_OVER = 10000; // discourages model from longer routes
 
     public Assignment OptimizeRoutesFrom2DCords(long[][] distanceMatrixCords, int numLocations, int[] demands) {
 
@@ -41,9 +44,7 @@ public class OptimizeRoutes {
 
             // sets all the vehicles to have the same capacity
             long[] vehicleCapacities = new long[numVehicles];
-            for (int i = 0; i < numVehicles; i++) {
-                vehicleCapacities[i] = VEHICLE_CAPACITY;
-            }
+            Arrays.fill(vehicleCapacities, VEHICLE_CAPACITY);
 
             RoutingIndexManager manager = new RoutingIndexManager(numLocations, numVehicles, depot);
             RoutingModel routing = new RoutingModel(manager);
@@ -70,6 +71,8 @@ public class OptimizeRoutes {
                     true,
                     "Capacity");
 
+            RoutingDimension capacityDimension = routing.getMutableDimension("Capacity");
+
             // have max miles traveled for any one truck
             routing.addDimension(
                     transitCallbackIndex,
@@ -80,18 +83,47 @@ public class OptimizeRoutes {
 
             RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
 
-            // add penalty for missing location | to enforce going to every location, no mater what, comment out code, may result in no solution
+            // add penalty for missing location | to enforce going to every location, no
+            // mater what, comment out code, may result in no solution
             // for (int i = 1; i < numLocations; i++) {
             // routing.addDisjunction(new long[] { manager.nodeToIndex(i) },
             // PENALTY_OF_MISSING_LOCATION);
             // }
 
-            //penalize adding more vehicles (minimizing vehicles needed), and add max distance any one truck can go, and a penalty for longer distances
-            BoundCost boundCost = new BoundCost(MAX_DISTANCE_METERS, PENALTY_PER_METER_OVER);
+            // penalize adding more vehicles (minimizing vehicles needed), and add max
+            // distance any one truck can go, and a penalty for longer distances
+            BoundCost maxBoundCost = new BoundCost(MAX_DISTANCE_METERS, PENALTY_PER_METER_OVER);
+            BoundCost optimalBoundCost = new BoundCost(OPTIMAL_DISTANCE_METERS, PENALTY_PER_METER_OVER);
+
             for (int vehicleId = 0; vehicleId < numVehicles; vehicleId++) {
-            routing.setFixedCostOfVehicle(COST_OF_ADDING_VEHICLE, vehicleId);
-            distanceDimension.setSoftSpanUpperBoundForVehicle(boundCost, vehicleId);
+                if (vehicleId <= 4) {
+                    routing.setFixedCostOfVehicle(COST_OF_ADDING_VEHICLE, vehicleId);
+                    distanceDimension.setSoftSpanUpperBoundForVehicle(maxBoundCost, vehicleId);
+                } else {
+                    // distanceDimension.cumulVar(routing.end(vehicleId)).setMax(OPTIMAL_DISTANCE_METERS);
+                    routing.setFixedCostOfVehicle(COST_OF_ADDING_VEHICLE, vehicleId);
+                    distanceDimension.setSoftSpanUpperBoundForVehicle(optimalBoundCost,
+                    vehicleId);
+                }
             }
+
+            // Set up pickup and delivery pairs if you want to specify 1 or multiple pick up
+            // and drop of points along the route for the trucks
+            // for (int i = 1; i < numLocations; i++) {
+            // if (demands[i] > 0) {
+            // long pickupIndex = manager.nodeToIndex(depot);
+            // long deliveryIndex = manager.nodeToIndex(i);
+
+            // routing.addPickupAndDelivery(pickupIndex, deliveryIndex);
+            // routing.solver().addConstraint(
+            // routing.solver().makeEquality(routing.vehicleVar(pickupIndex),
+            // routing.vehicleVar(deliveryIndex)));
+            // routing.solver().addConstraint(
+            // routing.solver().makeLessOrEqual(
+            // capacityDimension.cumulVar(pickupIndex),
+            // capacityDimension.cumulVar(deliveryIndex)));
+            // }
+            // }
 
             RoutingSearchParameters searchParameters = main.defaultRoutingSearchParameters()
                     .toBuilder()

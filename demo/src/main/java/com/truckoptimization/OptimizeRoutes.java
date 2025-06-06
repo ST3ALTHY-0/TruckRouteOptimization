@@ -23,15 +23,15 @@ public class OptimizeRoutes {
     private static final int MAX_DISTANCE_METERS_TEST = 2000000; // ~1243 miles
     private static final int MAX_NUMBER_TRUCKS = 20;
     private static final int VEHICLE_CAPACITY = 10;
-    private static final int SECONDS_TO_CALCULATE = 5;
+    private static final int SECONDS_TO_CALCULATE = 10; //how long the model will spend trying to find the optimal solution
     private static final int COST_OF_ADDING_VEHICLE = 10000; //discourages model from adding vehicles
     private static final long PENALTY_OF_MISSING_LOCATION = 100_000_000;
-    private static final long PENALTY_PER_METER_OVER = 10000; //discourages model from longer routes
+    private static final long PENALTY_PER_METER_OVER = 1000; //discourages model from longer routes
 
     public Assignment OptimizeRoutesFrom2DCords(long[][] distanceMatrixCords, int numLocations, int[] demands) {
 
         try {
-            Loader.loadNativeLibraries(); // <-- Add this line
+            Loader.loadNativeLibraries();
 
             // depo = 0 sets the first first elements in the distanceMatrixCords, and
             // demands to the pick-up drop off location
@@ -64,9 +64,9 @@ public class OptimizeRoutes {
             });
 
             routing.addDimensionWithVehicleCapacity(
-                    demandCallbackIndex, // demand callback
-                    0l, // null capacity slack
-                    vehicleCapacities, // vehicle maximum capacities
+                    demandCallbackIndex,
+                    0,
+                    vehicleCapacities,
                     true,
                     "Capacity");
 
@@ -86,8 +86,8 @@ public class OptimizeRoutes {
             // PENALTY_OF_MISSING_LOCATION);
             // }
 
-            //penalize adding more vehicles (minimizing vehicles needed)
-            BoundCost boundCost = new BoundCost(MAX_DISTANCE_METERS, PENALTY_PER_METER_OVER); // 900 km soft limit, penalize heavily if exceeded
+            //penalize adding more vehicles (minimizing vehicles needed), and add max distance any one truck can go, and a penalty for longer distances
+            BoundCost boundCost = new BoundCost(MAX_DISTANCE_METERS, PENALTY_PER_METER_OVER);
             for (int vehicleId = 0; vehicleId < numVehicles; vehicleId++) {
             routing.setFixedCostOfVehicle(COST_OF_ADDING_VEHICLE, vehicleId);
             distanceDimension.setSoftSpanUpperBoundForVehicle(boundCost, vehicleId);

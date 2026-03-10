@@ -1,0 +1,13 @@
+{
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "cSpell.words": [
+        "cosσ",
+        "sinα",
+        "sinσ"
+    ],
+    "java.project.sourcePaths": [
+        ".vscode"
+    ],
+    "python.terminal.useEnvFile": true,
+    "python.envFile": "${workspaceFolder}/.env"
+}
